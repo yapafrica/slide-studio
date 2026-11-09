@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Offline Mobile Slides & Voice Studio Pro</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    h1 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 420px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      font-size: 12px;
+    }
+
+    .colors {
+      display: flex;
+      gap: 6px;
+    }
+
+    .color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .color-dot.active {
+      border-color: #fff;
+      transform: scale(1.1);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      cursor: crosshair;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .editor-section {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #1e293b;
+    }
+
+    .slide-indicators {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    label {
+      font-size: 11px;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 90px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      color: #fff;
+      padding: 8px;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+
+    .audio-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #0f172a;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .audio-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 12px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: filter 0.2s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-secondary { background: #475569; color: #fff; }
+    .btn-primary { background: #0284c7; color: #fff; }
+    .btn-upload { background: #7c3aed; color: #fff; grid-column: span 2; }
+    .btn-mic { background: #059669; color: #fff; }
+    .btn-mic.recording { background: #dc2626; animation: pulse 1.2s infinite; }
+    .btn-audio-upload { background: #0284c7; color: #fff; padding: 6px 10px; font-size: 11px; }
+    
+    .format-selector {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .format-selector select {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #475569;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-record {
+      background: #dc2626;
+      color: #fff;
+      grid-column: span 2;
+    }
+    .btn-record.recording {
+      background: #16a34a;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    .status-msg {
+      text-align: center;
+      font-size: 11px;
+      color: #38bdf8;
+      min-height: 16px;
+    }
+
+    input[type="file"] { display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>📱 Offline Mobile Slide & Voice Studio Pro</h1>
+
+  <div class="app-container">
+    <div class="toolbar">
+      <span>Pen Color:</span>
+      <div class="colors">
+        <div class="color-dot active" style="background: #e11d48;" onclick="setPenColor('#e11d48', this)"></div>
+        <div class="color-dot" style="background: #2563eb;" onclick="setPenColor('#2563eb', this)"></div>
+        <div class="color-dot" style="background: #16a34a;" onclick="setPenColor('#16a34a', this)"></div>
+        <div class="color-dot" style="background: #f59e0b;" onclick="setPenColor('#f59e0b', this)"></div>
+        <div class="color-dot" style="background: #ffffff;" onclick="setPenColor('#ffffff', this)"></div>
+      </div>
+      <button class="btn-secondary" style="padding: 4px 8px; font-size: 10px;" onclick="clearCanvas()">Clear Marks</button>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="slideCanvas" width="640" height="360"></canvas>
+    </div>
+
+    <div class="editor-section">
+      <div class="slide-indicators">
+        <button class="btn-secondary" style="padding: 6px 10px;" onclick="prevSlide()">◀ Prev</button>
+        <span id="slideIndicator">Slide 1 of 1</span>
+        <button class="btn-secondary" style="padding: 6px 10px;" onclick="nextSlide()">Next ▶</button>
+      </div>
+
+      <button class="btn-upload" onclick="document.getElementById('imageUpload').click()">🖼️ Upload Slide Image (PNG/JPG)</button>
+      <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)">
+
+      <div>
+        <label>Expanded Slide Notes & Script:</label>
+        <textarea id="slideNotes" placeholder="Type notes here..." oninput="saveNotes()"></textarea>
+      </div>
+
+      <div class="audio-controls">
+        <div class="audio-row">
+          <span id="audioStatus">🎙️ Voice: None</span>
+          <button id="playAudioBtn" class="btn-secondary" style="padding: 4px 8px; font-size: 10px; display:none;" onclick="playSlideAudio()">▶ Play</button>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="micBtn" class="btn-mic" style="flex:1; padding: 6px;" onclick="toggleAudioRecord()">Record Mic</button>
+          <button class="btn-audio-upload" style="flex:1;" onclick="document.getElementById('audioUpload').click()">📁 Upload Audio</button>
+          <input type="file" id="audioUpload" accept="audio/*" onchange="handleAudioUpload(event)">
+        </div>
+      </div>
+
+      <div class="format-selector">
+        <label>Export Format:</label>
+        <select id="exportFormat">
+          <option value="webm">WebM (.webm)</option>
+          <option value="mp4">MP4 (.mp4)</option>
+        </select>
+      </div>
+
+      <div class="status-msg" id="statusMsg">Ready offline</div>
+
+      <div class="actions">
+        <button class="btn-primary" onclick="addSlide()">➕ Add Slide</button>
+        <button class="btn-secondary" onclick="deleteCurrentSlide()" style="background:#b91c1c;">🗑️ Delete Slide</button>
+        <button id="recordBtn" class="btn-record" onclick="compileAndExportVideo()">🔴 Export Presentation Video</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const canvas = document.getElementById("slideCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let slides = [
+    { imageObj: null, imageSrc: null, notes: "", audioBlob: null, audioUrl: null, drawing: [] }
+  ];
+  let currentSlideIdx = 0;
+  let currentPenColor = "#e11d48";
+  let isDrawing = false;
+  let slideAudioRecorder;
+  let audioChunks = [];
+
+  function renderLoop() {
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let currentSlide = slides[currentSlideIdx];
+
+    if (currentSlide && currentSlide.imageObj) {
+      ctx.drawImage(currentSlide.imageObj, 0, 0, canvas.width, canvas.height);
+      drawAnnotations();
+    } else {
+      ctx.fillStyle = "#334155";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "bold 16px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`Slide ${currentSlideIdx + 1} (No Image Uploaded)`, canvas.width / 2, canvas.height / 2);
+      drawAnnotations();
+    }
+
+    requestAnimationFrame(renderLoop);
+  }
+
+  function drawAnnotations() {
+    let path = slides[currentSlideIdx].drawing;
+    for (let stroke of path) {
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (let i = 0; i < stroke.points.length; i++) {
+        let pt = stroke.points[i];
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function getCanvasCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", stopDraw);
+  canvas.addEventListener("touchstart", (e) => { e.preventDefault(); startDraw(e); }, { passive: false });
+  canvas.addEventListener("touchmove", (e) => { e.preventDefault(); draw(e); }, { passive: false });
+  canvas.addEventListener("touchend", stopDraw);
+
+  function startDraw(e) {
+    isDrawing = true;
+    const coords = getCanvasCoords(e);
+    slides[currentSlideIdx].drawing.push({ color: currentPenColor, points: [coords] });
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    const coords = getCanvasCoords(e);
+    let currentStroke = slides[currentSlideIdx].drawing[slides[currentSlideIdx].drawing.length - 1];
+    currentStroke.points.push(coords);
+  }
+
+  function stopDraw() { isDrawing = false; }
+
+  function setPenColor(color, element) {
+    currentPenColor = color;
+    document.querySelectorAll(".color-dot").forEach(d => d.classList.remove("active"));
+    element.classList.add("active");
+  }
+
+  function clearCanvas() {
+    slides[currentSlideIdx].drawing = [];
+  }
+
+  function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          slides[currentSlideIdx].imageObj = img;
+          slides[currentSlideIdx].imageSrc = e.target.result;
+          document.getElementById("statusMsg").innerText = `Slide ${currentSlideIdx + 1} image loaded!`;
+        };
+        img.src = e.target.result;
+      }
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function handleAudioUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      slides[currentSlideIdx].audioBlob = file;
+      slides[currentSlideIdx].audioUrl = URL.createObjectURL(file);
+      updateUI();
+      document.getElementById("statusMsg").innerText = `Audio attached to Slide ${currentSlideIdx + 1}!`;
+    }
+  }
+
+  function updateUI() {
+    document.getElementById("slideIndicator").innerText = `Slide ${currentSlideIdx + 1} of ${slides.length}`;
+    document.getElementById("slideNotes").value = slides[currentSlideIdx].notes;
+    
+    const audioStatus = document.getElementById("audioStatus");
+    const playBtn = document.getElementById("playAudioBtn");
+    if (slides[currentSlideIdx].audioUrl) {
+      audioStatus.innerText = "🎙️ Voice: Attached ✓";
+      playBtn.style.display = "inline-block";
+    } else {
+      audioStatus.innerText = "🎙️ Voice: None";
+      playBtn.style.display = "none";
+    }
+  }
+
+  function nextSlide() {
+    if (currentSlideIdx < slides.length - 1) {
+      currentSlideIdx++;
+      updateUI();
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlideIdx > 0) {
+      currentSlideIdx--;
+      updateUI();
+    }
+  }
+
+  function addSlide() {
+    slides.push({ imageObj: null, imageSrc: null, notes: "", audioBlob: null, audioUrl: null, drawing: [] });
+    currentSlideIdx = slides.length - 1;
+    updateUI();
+  }
+
+  function deleteCurrentSlide() {
+    if (slides.length === 1) {
+      alert("You must keep at least one slide.");
+      return;
+    }
+    slides.splice(currentSlideIdx, 1);
+    if (currentSlideIdx >= slides.length) currentSlideIdx = slides.length - 1;
+    updateUI();
+  }
+
+  function saveNotes() {
+    slides[currentSlideIdx].notes = document.getElementById("slideNotes").value;
+  }
+
+  async function toggleAudioRecord() {
+    const micBtn = document.getElementById("micBtn");
+    const audioStatus = document.getElementById("audioStatus");
+
+    if (!window.isSecureContext) {
+      alert("Microphone recording requires a secure context (HTTPS or localhost). On mobile file downloads, please use 'Upload Audio' instead.");
+      return;
+    }
+
+    if (!slideAudioRecorder || slideAudioRecorder.state === "inactive") {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        slideAudioRecorder = new MediaRecorder(stream);
+
+        slideAudioRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+        slideAudioRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          slides[currentSlideIdx].audioBlob = audioBlob;
+          slides[currentSlideIdx].audioUrl = URL.createObjectURL(audioBlob);
+          updateUI();
+        };
+
+        slideAudioRecorder.start();
+        micBtn.innerText = "Stop Mic";
+        micBtn.classList.add("recording");
+        audioStatus.innerText = "Recording voice...";
+      } catch (err) {
+        alert("Microphone permission denied or unavailable on this mobile browser.");
+      }
+    } else {
+      slideAudioRecorder.stop();
+      micBtn.innerText = "Record Mic";
+      micBtn.classList.remove("recording");
+    }
+  }
+
+  function playSlideAudio() {
+    if (slides[currentSlideIdx].audioUrl) {
+      const audio = new Audio(slides[currentSlideIdx].audioUrl);
+      audio.play();
+    }
+  }
+
+  async function compileAndExportVideo() {
+    const btn = document.getElementById("recordBtn");
+    const status = document.getElementById("statusMsg");
+    const format = document.getElementById("exportFormat").value;
+
+    btn.disabled = true;
+    btn.innerText = "⏳ Compiling Video...";
+
+    // Force Slide 1 and give mobile engine 600ms buffer to paint image
+    currentSlideIdx = 0;
+    updateUI();
+    await new Promise(r => setTimeout(r, 600));
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const audioDestination = audioCtx.createMediaStreamDestination();
+    const canvasStream = canvas.captureStream(30);
+
+    const combinedStream = new MediaStream([
+      ...canvasStream.getVideoTracks(),
+      ...audioDestination.stream.getAudioTracks()
+    ]);
+
+    let mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
+    const videoRecorder = new MediaRecorder(combinedStream, { mimeType });
+    const videoChunks = [];
+
+    videoRecorder.ondataavailable = (e) => { if (e.data.size > 0) videoChunks.push(e.data); };
+
+    videoRecorder.onstop = () => {
+      const blob = new Blob(videoChunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      // Fix double extension bug cleanly
+      a.download = format === 'mp4' ? "presentation.mp4" : "presentation.webm";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 100);
+
+      btn.disabled = false;
+      btn.innerText = "🔴 Export Presentation Video";
+      status.innerText = "Export complete!";
+    };
+
+    videoRecorder.start();
+
+    for (let i = 0; i < slides.length; i++) {
+      currentSlideIdx = i;
+      updateUI();
+      status.innerText = `Recording Slide ${i + 1} of ${slides.length}...`;
+
+      await new Promise(r => setTimeout(r, 500));
+
+      const slide = slides[i];
+      if (slide.audioBlob) {
+        try {
+          const arrayBuffer = await slide.audioBlob.arrayBuffer();
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          await new Promise((resolve) => {
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioDestination);
+            source.onended = resolve;
+            source.start();
+          });
+        } catch (e) {
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      } else {
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+
+    videoRecorder.stop();
+  }
+
+  renderLoop();
+  updateUI();
+</script>
+</body>
+</html>
